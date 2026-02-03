@@ -1,0 +1,2 @@
+class ImageGridShuffle:
+    pass

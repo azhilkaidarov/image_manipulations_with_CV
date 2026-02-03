@@ -1,0 +1,2 @@
+class ImagePadding:
+    pass

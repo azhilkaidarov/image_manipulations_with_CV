@@ -1,0 +1,2 @@
+class ImageResizeNN:
+    pass
