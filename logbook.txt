@@ -6,4 +6,4 @@
 2-2-26, 10:03pm
     - Instead of using 'Pillow' added 'matplotlib' library.
     - Obtained color channel from 'the_boat.jpg' picture. See '/data/outputs/..'.
-    Next task: continue explorting matplotlib functionality. Try to color row-col, change color of every other pixel. 
+    Next task: continue exploring matplotlib functionality. Try to color row-col, change color of every other pixel. 
