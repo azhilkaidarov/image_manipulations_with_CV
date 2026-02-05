@@ -1,2 +1,0 @@
-class ImageBlur:
-    pass

@@ -1,2 +1,0 @@
-class ColorInverter:
-    pass

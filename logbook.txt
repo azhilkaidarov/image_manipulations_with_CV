@@ -1,9 +1,0 @@
-2-2-26, 4:22pm
-    - Created the structure of the project. Implemented image input from 'data/raw'. 
-    - Used 'Pillow' library to open the image. 
-    - Implemented 'enum' structure for chosing pictures 'Picture.BOATS.value'. 
-    Next task: implement image input to every module in 'ops'. Prepare the enviroment for the future work.
-2-2-26, 10:03pm
-    - Instead of using 'Pillow' added 'matplotlib' library.
-    - Obtained color channel from 'the_boat.jpg' picture. See '/data/outputs/..'.
-    Next task: continue explorting matplotlib functionality. Try to color row-col, change color of every other pixel. 
