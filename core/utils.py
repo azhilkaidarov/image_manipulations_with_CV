@@ -9,3 +9,4 @@ class Picture(Enum):
     MOUNTAINS = "the_mountains.jpg"
     TREES = "the_trees.png"
     WHITE = "the_white.jpg"
+    GUY = "the_guy.jpg"
