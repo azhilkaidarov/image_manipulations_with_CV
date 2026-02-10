@@ -1,1 +1,0 @@
-# show(), compare(), grid view
