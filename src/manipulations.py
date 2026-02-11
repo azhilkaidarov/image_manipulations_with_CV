@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit
+from numba import njit, prange
 
 from enum import Enum, auto
 
@@ -58,16 +58,6 @@ class Manipulation(Enum):
     Notes
     The algorithm uses area-based downsampling (box averaging).
 
-
-    .PADDING - Apply explicit padding to an image.
-    -
-    Parameters
-    img : np.ndarray
-        Input image.
-    pad
-        Padding specification defining both the number of pixels added
-        beyond the image borders and the padding mode.
-
     .PERMUTATION Permute square blocks of an image.
     -
     Parameters
@@ -94,7 +84,6 @@ class Manipulation(Enum):
     BLUR = auto()
     MIRROR = auto()
     COMPRESSION = auto()
-    PADDING = auto()
     PERMUTATION = auto()
     INVERT = auto()
 
@@ -158,6 +147,41 @@ def _rotate_numba(src, angle):
 
     return dst
 
+
+@njit(parallel=True, fastmath=True)
+def _blur_numba(img, w, count):
+    pad = len(w) - 1
+    H, W, C = img.shape
+    out = np.zeros_like(img, dtype=np.float32)
+
+    for y in prange(pad, H - pad):
+        for x in range(pad, W - pad):
+
+            for c in range(C):
+                acc = 0.0
+
+                for r in range(pad + 1):
+
+                    k = w[r] / count[r]
+
+                    if r == 0:
+                        acc += img[y, x, c] * k
+                    else:
+                        # верх и низ
+                        for j in range(-r, r + 1):
+                            acc += img[y - r, x + j, c] * k
+                            acc += img[y + r, x + j, c] * k
+
+                        # лево и право (без углов)
+                        for i in range(-r + 1, r):
+                            acc += img[y + i, x - r, c] * k
+                            acc += img[y + i, x + r, c] * k
+
+                out[y, x, c] = acc
+
+    return out
+
+
 class ImageManipulation:
     """
     Collection of fundamental image manipulation operations.
@@ -216,7 +240,7 @@ class ImageManipulation:
         -----
         The algorithm uses inverse mapping with bilinear interpolation.
         """
-        return _rotate_numba(src, angle)
+        return _rotate_numba(src, angle).astype(np.uint8)
 
     def blur(self, img: np.ndarray) -> np.ndarray:
         """
@@ -231,7 +255,43 @@ class ImageManipulation:
         -----
         Box blur applies a uniform averaging filter over a square neighborhood.
         """
-        pass
+        pad = 21
+        sigma = 8.0   # можно менять для силы blur
+
+        # -----------------------
+        # 2. Gaussian веса по радиусу
+        # -----------------------
+
+        r = np.arange(0, pad + 1, dtype=np.float32)
+        w = np.exp(-(r**2) / (2 * sigma**2)).astype(np.float32)
+        w /= w.sum()   # нормализация
+
+        # размер каждого кольца L∞
+        count = np.zeros(pad + 1, dtype=np.float32)
+        count[0] = 1.0
+        for i in range(1, pad + 1):
+            count[i] = 8.0 * i
+
+        # -----------------------
+        # 3. Padding
+        # -----------------------
+
+        padded = np.pad(
+            img.astype(np.float32),
+            pad_width=((pad, pad), (pad, pad), (0, 0)),
+            mode="reflect"
+        )
+
+        # -----------------------
+        # 4. Запуск
+        # -----------------------
+
+        nout = _blur_numba(padded, w, count)
+
+        # обрезаем padding
+        nout = nout[pad:-pad, pad:-pad]
+
+        return np.clip(nout, 0, 255).astype(np.uint8)
 
     def mirror(self, img: np.ndarray, axis: int) -> np.ndarray:
         """
@@ -265,21 +325,29 @@ class ImageManipulation:
         -----
         The algorithm uses area-based downsampling (box averaging).
         """
-        pass
+        h, w, c = img.shape
 
-    def padding(self, img: np.ndarray, pad) -> np.ndarray:
-        """
-        Apply explicit padding to an image.
+        pad_h = int(np.ceil(h / size) * size - h)
+        pad_top = pad_h // 2
+        pad_bottom = pad_h - pad_top
 
-        Parameters
-        ----------
-        img : np.ndarray
-            Input image.
-        pad
-            Padding specification defining both the number of pixels added
-            beyond the image borders and the padding mode.
-        """
-        pass
+        pad_w = int(np.ceil(w / size) * size - w)
+        pad_left = pad_w // 2
+        pad_right = pad_w - pad_left
+
+        padded = np.pad(img, pad_width=((pad_top, pad_bottom),
+                                        (pad_left, pad_right),
+                                        (0,0)), mode="edge")
+
+        kh, kw = padded.shape[0] // size, padded.shape[1] // size
+
+        padded = (
+            np.reshape(padded, (size, kh, size, kw, c))
+            .transpose(0, 2, 1, 3, 4)
+            .mean(axis=(2, 3))
+        )
+
+        return np.clip(padded, 0, 255).astype(np.uint8)
 
     def permutation(self, img: np.ndarray, size: int) -> np.ndarray:
         """
@@ -292,7 +360,36 @@ class ImageManipulation:
         size : int
             Edge length (in pixels) of square blocks used for permutation.
         """
-        pass
+        h, w, c = img.shape
+
+        pad_h = int(np.ceil(h / size) * size - h)
+        pad_top = pad_h // 2
+        pad_bottom = pad_h - pad_top
+
+        pad_w = int(np.ceil(w / size) * size - w)
+        pad_left = pad_w // 2
+        pad_right = pad_w - pad_left
+
+        padded = np.pad(img, pad_width=((pad_top, pad_bottom),
+                                        (pad_left, pad_right),
+                                        (0,0)), mode="edge")
+
+        nh, nw = padded.shape[0] // size, padded.shape[1] // size
+
+        perm = np.random.permutation(nh * nw)
+
+        shuffled = (
+            padded
+            .reshape(nh, size, nw, size, c)
+            .transpose(0, 2, 1, 3, 4)
+            .reshape(-1, size, size, c)
+            [perm]
+            .reshape(nh, nw, size, size, c)
+            .transpose(0, 2, 1, 3, 4)
+            .reshape(nh * size, nw * size, c)
+        )
+
+        return np.clip(shuffled, 0, 255).astype(np.uint8)
 
     def invert(self, img: np.ndarray) -> np.ndarray:
         """
@@ -312,7 +409,6 @@ class ImageManipulation:
             Manipulation.BLUR: self.blur,
             Manipulation.MIRROR: self.mirror,
             Manipulation.COMPRESSION: self.compression,
-            Manipulation.PADDING: self.padding,
             Manipulation.PERMUTATION: self.permutation,
             Manipulation.INVERT: self.invert
         }
