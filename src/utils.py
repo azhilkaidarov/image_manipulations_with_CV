@@ -2,6 +2,9 @@
 from enum import Enum
 
 
+PIPELINE_CONFIG = "pipeline.yaml"
+
+
 class Picture(Enum):
     BOATS = "the_boats.jpg"
     DOOR = "the_door.jpg"

@@ -72,6 +72,12 @@ class Manipulation(Enum):
     Parameters
     img : np.ndarray
         Input image.
+    channel : int
+        Specify channel to invert (
+            0 - RED
+            1 - GREEN
+            2 - BLUE
+            )
     """
     CROP = auto()
     ROTATE = auto()
@@ -394,7 +400,7 @@ class ImageManipulation:
         img : np.ndarray
             Input image.
         """
-        return 255 - img
+        return (np.array([255, 255, 255]) - img[:, :]).astype(np.uint8)
 
     def apply(self, op: Manipulation, img, **kwargs):
         dispatch = {
