@@ -101,7 +101,7 @@ Goal: shuffle image blocks and mirror the result.
 
 ## Common Errors
 
-- `ValueError: Манипуляция ... не поддерживается!`
+- `ValueError: Manipulation ... is not supported!`
   - check `name` in `pipeline.yaml` (must match enum operation names).
 - Invalid params (`bbox`, `angle`, `size`, `axis`)
   - check value ranges in `src/manipulations.py`.

@@ -11,3 +11,6 @@ wheels/
 
 # output
 data/output/*.jpg
+
+# logs 
+logs/app.log

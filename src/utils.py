@@ -1,4 +1,4 @@
-# проверки, assert'ы, shape helpers
+# checks, asserts, shape helpers
 from enum import Enum
 
 

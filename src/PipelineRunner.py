@@ -19,8 +19,8 @@ class PipelineStep(BaseModel):
     @classmethod
     def check_name(cls, v: str):
         if v not in Manipulation.__members__:
-            logger.error(f"Манипуляция {v} не поддерживается!")
-            raise ValueError(f"Манипуляция {v} не поддерживается!")
+            logger.error(f"Manipulation {v} is not supported!")
+            raise ValueError(f"Manipulation {v} is not supported!")
         return v
 
 
@@ -37,17 +37,17 @@ class PipelineRunner:
             self.config = PipelineConfig(**raw_config)
             self.steps = self.config.pipeline
         except Exception as e:
-            logger.error(f"Ошибка валидации конфига: \n{e}")
+            logger.error(f"Config validation error:\n{e}")
             raise
 
     def run(self, image: np.ndarray, image_name: str):
-        logger.info("Запуск пайплайн обработки")
+        logger.info("Starting image processing pipeline")
 
         im = ImageManipulation()
         nimg = image.copy()
 
-        logger.info(f"Загружен конфиг ({len(self.steps)} шага)")
-        logger.info(f"Обработка картинки {image_name}...")
+        logger.info(f"Config loaded ({len(self.steps)} step(s))")
+        logger.info(f"Processing image {image_name}...")
         op_names = ""
 
         for op in self.steps:
@@ -59,7 +59,7 @@ class PipelineRunner:
 
             op_names += f"{op.name}, "
 
-        logger.info(f"Применено: {op_names}")
+        logger.info(f"Applied operations: {op_names}")
 
         return n_img
 

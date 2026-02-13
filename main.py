@@ -10,6 +10,7 @@ from src.PipelineRunner import PipelineRunner
 input_dir = Path.cwd() / "data" / "raw"
 output_dir = Path.cwd() / "data" / "output"
 
+# Setting up loggings
 log_file = Path("logs/app.log")
 log_file.parent.mkdir(exist_ok=True)
 
@@ -25,18 +26,21 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 logger.info("="*50)
-logger.info(f"Логирование запущено. Файл лога: {log_file}")
+logger.info(f"Logging started. Log file: {log_file}")
 
 
 def main():
+    # Choose picture
     choose_pic = Picture.ISLAND
     inp = Image.open(f"{input_dir}/{choose_pic.value}")
     img = np.array(inp, dtype='uint8')
 
-    orchestrator = PipelineRunner(PIPELINE_CONFIG)
-    nimg = orchestrator.run(img, choose_pic.value)
-    logger.info(f"Результат сохранен в ../data/output/{choose_pic.value} - through orchestrator.jpg")
-    Image.fromarray(nimg).save(f"{output_dir}/{choose_pic.value} - through orchestrator.jpg")
+    # Initialize and run pipeline
+    pipe = PipelineRunner(PIPELINE_CONFIG)
+    nimg = pipe.run(img, choose_pic.value)
+
+    logger.info(f"Result saved at ../data/output/{choose_pic.value} - processed.jpg")
+    Image.fromarray(nimg).save(f"{output_dir}/{choose_pic.value} - processed.jpg")
 
 
 if __name__ == "__main__":

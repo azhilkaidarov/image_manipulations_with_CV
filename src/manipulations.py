@@ -161,12 +161,12 @@ def _blur_numba(img, w, count):
                     if r == 0:
                         acc += img[y, x, c] * k
                     else:
-                        # верх и низ
+                        # top and bottom
                         for j in range(-r, r + 1):
                             acc += img[y - r, x + j, c] * k
                             acc += img[y + r, x + j, c] * k
 
-                        # лево и право (без углов)
+                        # left and right (without corners)
                         for i in range(-r + 1, r):
                             acc += img[y + i, x - r, c] * k
                             acc += img[y + i, x + r, c] * k
@@ -215,8 +215,8 @@ class ImageManipulation:
         h, w, _ = img.shape
         y0, x0, y1, x1 = bbox
         if not (0 <= y0 < y1 <= h) or not (0 <= x0 < x1 <= w):
-            logging.error("Невалидные координаты bbox. См. документацию.")
-            raise ValueError("Невалидные координаты bbox. См. документацию.")
+            logging.error("Invalid bbox coordinates. See documentation.")
+            raise ValueError("Invalid bbox coordinates. See documentation.")
 
         return img[y0: y1, x0: x1]
 
@@ -236,8 +236,8 @@ class ImageManipulation:
         The algorithm uses inverse mapping with bilinear interpolation.
         """
         if not (0.0 <= angle <= 360.0):
-            logging.error("Невалидный угол поворота 'angle'. См. документацию.")
-            raise ValueError("Невалидный угол поворота 'angle'. См. документацию.")
+            logging.error("Invalid rotation angle 'angle'. See documentation.")
+            raise ValueError("Invalid rotation angle 'angle'. See documentation.")
         return _rotate_numba(img, angle).astype(np.uint8)
 
     def blur(self, img: np.ndarray) -> np.ndarray:
@@ -254,17 +254,17 @@ class ImageManipulation:
         Box blur applies a uniform averaging filter over a square neighborhood.
         """
         pad = 21
-        sigma = 8.0   # можно менять для силы blur
+        sigma = 8.0   # can be adjusted to control blur strength
 
         # -----------------------
-        # 2. Gaussian веса по радиусу
+        # 2. Gaussian weights by radius
         # -----------------------
 
         r = np.arange(0, pad + 1, dtype=np.float32)
         w = np.exp(-(r**2) / (2 * sigma**2)).astype(np.float32)
-        w /= w.sum()   # нормализация
+        w /= w.sum()   # normalization
 
-        # размер каждого кольца L∞
+        # size of each L-infinity ring
         count = np.zeros(pad + 1, dtype=np.float32)
         count[0] = 1.0
         for i in range(1, pad + 1):
@@ -281,12 +281,12 @@ class ImageManipulation:
         )
 
         # -----------------------
-        # 4. Запуск
+        # 4. Run
         # -----------------------
 
         nout = _blur_numba(padded, w, count)
 
-        # обрезаем padding
+        # crop padding
         nout = nout[pad:-pad, pad:-pad]
 
         return np.clip(nout, 0, 255).astype(np.uint8)
@@ -304,8 +304,8 @@ class ImageManipulation:
             (e.g., 0 for vertical, 1 for horizontal).
         """
         if axis not in [0, 1]:
-            logging.error("Неверное значение axis. См. документацию.")
-            raise ValueError("Неверное значение axis. См документацию.")
+            logging.error("Invalid axis value. See documentation.")
+            raise ValueError("Invalid axis value. See documentation.")
 
         return img[:, ::-1] if axis else img[::-1, :]
 
@@ -327,8 +327,8 @@ class ImageManipulation:
         h, w, c = img.shape
 
         if size <= 0 or size > h or size > w:
-            logging.error("Неверное значение итогового размера. См. документацию.")
-            raise ValueError("Неверное значение итогового размера. См документацию.")
+            logging.error("Invalid target size value. See documentation.")
+            raise ValueError("Invalid target size value. See documentation.")
 
         pad_h = int(np.ceil(h / size) * size - h)
         pad_top = pad_h // 2
@@ -366,8 +366,8 @@ class ImageManipulation:
         h, w, c = img.shape
 
         if size <= 0 or size > h or size > w:
-            logging.error("Неверное значение боксов. См. документацию.")
-            raise ValueError("Неверное значение боксов. См документацию.")
+            logging.error("Invalid block size value. See documentation.")
+            raise ValueError("Invalid block size value. See documentation.")
 
         pad_h = int(np.ceil(h / size) * size - h)
         pad_top = pad_h // 2
