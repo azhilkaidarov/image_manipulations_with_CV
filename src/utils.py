@@ -10,6 +10,5 @@ class Picture(Enum):
     DOOR = "the_door.jpg"
     ISLAND = "the_island.jpg"
     MOUNTAINS = "the_mountains.jpg"
-    TREES = "the_trees.png"
     WHITE = "the_white.jpg"
     GUY = "the_guy.jpg"

@@ -1,7 +1,5 @@
 pipeline:
-  - name: "blur"
-  - name: "mirror"
-    params: {axis: 1}
-  - name: "permutation"
-    params: {size: 512}
-  - name: "invert"
+  - name: 'PERMUTATION'
+    params: {size: 256}
+  - name: 'MIRROR'
+    params: {axis: 0}

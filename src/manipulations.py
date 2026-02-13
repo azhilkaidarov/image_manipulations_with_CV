@@ -1,6 +1,6 @@
 import numpy as np
+import logging
 from numba import njit, prange
-
 from enum import Enum, auto
 
 
@@ -215,11 +215,12 @@ class ImageManipulation:
         h, w, _ = img.shape
         y0, x0, y1, x1 = bbox
         if not (0 <= y0 < y1 <= h) or not (0 <= x0 < x1 <= w):
+            logging.error("Невалидные координаты bbox. См. документацию.")
             raise ValueError("Невалидные координаты bbox. См. документацию.")
 
         return img[y0: y1, x0: x1]
 
-    def rotate(self, src: np.ndarray, angle: float) -> np.ndarray:
+    def rotate(self, img: np.ndarray, angle: float) -> np.ndarray:
         """
         Rotate an image by a given angle.
 
@@ -234,7 +235,10 @@ class ImageManipulation:
         -----
         The algorithm uses inverse mapping with bilinear interpolation.
         """
-        return _rotate_numba(src, angle).astype(np.uint8)
+        if not (0.0 <= angle <= 360.0):
+            logging.error("Невалидный угол поворота 'angle'. См. документацию.")
+            raise ValueError("Невалидный угол поворота 'angle'. См. документацию.")
+        return _rotate_numba(img, angle).astype(np.uint8)
 
     def blur(self, img: np.ndarray) -> np.ndarray:
         """
@@ -299,7 +303,8 @@ class ImageManipulation:
             Axis along which the image is mirrored
             (e.g., 0 for vertical, 1 for horizontal).
         """
-        if axis != 0 and axis != 1:
+        if axis not in [0, 1]:
+            logging.error("Неверное значение axis. См. документацию.")
             raise ValueError("Неверное значение axis. См документацию.")
 
         return img[:, ::-1] if axis else img[::-1, :]
@@ -321,6 +326,10 @@ class ImageManipulation:
         """
         h, w, c = img.shape
 
+        if size <= 0 or size > h or size > w:
+            logging.error("Неверное значение итогового размера. См. документацию.")
+            raise ValueError("Неверное значение итогового размера. См документацию.")
+
         pad_h = int(np.ceil(h / size) * size - h)
         pad_top = pad_h // 2
         pad_bottom = pad_h - pad_top
@@ -331,7 +340,7 @@ class ImageManipulation:
 
         padded = np.pad(img, pad_width=((pad_top, pad_bottom),
                                         (pad_left, pad_right),
-                                        (0,0)), mode="edge")
+                                        (0, 0)), mode="edge")
 
         kh, kw = padded.shape[0] // size, padded.shape[1] // size
 
@@ -355,6 +364,10 @@ class ImageManipulation:
             Edge length (in pixels) of square blocks used for permutation.
         """
         h, w, c = img.shape
+
+        if size <= 0 or size > h or size > w:
+            logging.error("Неверное значение боксов. См. документацию.")
+            raise ValueError("Неверное значение боксов. См документацию.")
 
         pad_h = int(np.ceil(h / size) * size - h)
         pad_top = pad_h // 2
@@ -406,4 +419,8 @@ class ImageManipulation:
             Manipulation.PERMUTATION: self.permutation,
             Manipulation.INVERT: self.invert
         }
-        return dispatch[op](img, **kwargs)
+        try:
+            return dispatch[op](img, **kwargs)
+        except TypeError as e:
+            logging.error(f"Wrong keywords for {op} - {e}")
+            raise
